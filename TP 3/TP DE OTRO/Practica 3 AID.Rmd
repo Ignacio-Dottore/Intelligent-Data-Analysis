@@ -1,0 +1,777 @@
+---
+title: "Trabajo Practico 3 - Analisis Inteligente de Datos"
+author: "Waldo Fattore"
+date: "2022-11-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+setwd("./")
+
+library(ggplot2)
+library(dplyr)
+library(readxl)
+library(GGally)
+library(gridExtra)
+library(ggrepel)
+library(ggbiplot)
+library(ggcorrplot)
+library(ca)
+library(reshape2)
+library(factoextra)
+library(FactoMineR)
+library(ade4)
+library(anacor)
+library(kableExtra)
+library(cabootcrs)
+
+
+```
+
+# 1 Revision de Conceptos de Pruebas de Hipotesis
+
+## Revisión
+
+de conceptos de pruebas de hipótesis
+
+##Ejercicio 1. Seleccionar la alternativa correcta en cada caso:
+
+1. El nivel de significación de un test de hipótesis:
+
+(a) Suele ser pequeño y lo fija el investigador o un convenio generalmente aceptado.
+
+(b) Da la probabilidad de declarar significativo el resultado de un test, cuando esto es falso.
+
+(c) Al disminuir hace aumentar la probabilidad del error de tipo II.
+
+(d) Todo lo anterior es cierto.
+
+(e) Todo lo anterior es falso.
+
+```{r Ej1_NivelSignificacion}
+  print("Opcion D, todas las anteriores son ciertas")
+```
+
+## Ejercicio 2 Efectividad de Campaña
+
+Un estudio sobre la efectividad de un tipo de campaña llega a la conclusión de que éste significativamente distinto del tradicional con p<0,05 ¿Cuál es la interpretación correcta de este resultado?
+
+(a) Con toda seguridad, el nuevo estilo supera al tradicional
+
+(b) La probabilidad de éxito con la nueva campaña supera a la probabilidad del anterior en un 95%
+
+(c) El nuevo estilo es un 95% mejor que el tradicional.
+
+(d) Si la campana no fuese efectiva, existe menos del 5 % de probabilidad de observar muestras tan contrarias a dicha hipótesis como las obtenidas.
+
+(e) Ninguna de las anteriores es correcta.
+
+```{r Ej2_Hipotesis}
+  print("Opcion A: falsa porque dice distinto, no prueba superior o inferior")
+  print("Opcion B: falsa porque el test no asevera nada sobre la variable en si")
+  print("Opcion C: falsa porque dice distinto, no prueba superior o inferior, y mucho menos por un 95% especificamente")
+  print("Opcion D: verdadero")
+```
+
+## Ejercicio 3 P-Value
+
+En una prueba de hipótesis el p-valor es:
+
+(a) Un número pequeño.
+
+(b) Fijado antes de realizar la prueba.
+
+(c) La probabilidad de rechazar la hipótesis nula.
+
+(d) La probabilidad de error al rechazar la hipótesis alternativa.
+
+(e) Conocido al extraer la muestra y calcular el estadístico experimental.
+
+```{r Ej3_PValue}
+print("Opcion A: falso, se desea pequeño")
+print("Opcion B: falso, el que se fija a priori es el alfa")
+print("Opcion C: falso, la probabilidad de rechazar es el alfa")
+print("Opcion D: falso, eso seria el beta, o error de tipo 2")
+print("Opcion E: verdadero, una vez calculado el estadistico y obtenida la muestra se tiene suficiente informacion para el P-Value ")
+
+```
+
+## Ejercicio 4 Prueba de Hipotesis
+
+Una prueba de hipótesis se considera significativa si:
+
+(a) Una muestra aleatoria es coherente con la hipótesis nula.
+
+(b) Una muestra aleatoria no es coherente con la hipótesis nula.
+
+(c) La hipótesis alternativa es más probable que la nula.
+
+(d) Todo lo anterior es cierto.
+
+(e) Son ciertas (b) y (c).
+
+```{r Ej4_PruebaHipotesis}
+  print("Opcion E")
+```
+
+## Ejercicio 5 Lamparas
+
+Se realizó un estudio para comparar la duración de lamparas de bajo consumo utilizando dos métodos de fabricación diferentes. No se encontró diferencia estadísticamente significativa. ¿Cuál de las siguientes razones podrían ser causantes del resultado?
+
+(a) Los métodos ofrecen tiempos de duración muy diferentes.
+
+(b) El nivel de significación es demasiado alto.
+
+(c) Las muestras son demasiado numerosas.
+
+(d) Las muestras son demasiado pequeñas.
+
+(e) Nada de lo anterior.
+
+```{r Ej5_Lamparas}
+  print("Opcion E: falta informacion para saber con certeza el motivo")
+```
+
+## Ejercicio 6.V o F
+
+Elija la afirmación falsa:
+
+(a) El nivel de significación es normalmente un valor pequeño.
+
+(b) La significación de una prueba es conocida después de analizar los datos.
+
+(c) El nivel de significación de una prueba debe ser fijado antes de seleccionar la muestra.
+
+(d) Una prueba puede resultar significativa antes de recoger los datos.
+
+(e) Una prueba se señala como significativa cuando se obtiene una muestra que discrepa mucho de la hipótesis nula.
+
+```{r Ej6_Significacion}
+  print("Opcion D")
+```
+
+## Ejercicio 7 Error Tipo 1
+
+El error de tipo I consiste en:
+
+(a) Rechazar H0 cuando es falsa.
+
+(b) Rechazar H0 cuando es cierta.
+
+(c) No rechazar H0 cuando es cierta.
+
+(d) No rechazar H0 cuando es falsa
+
+(e) La probabilidad de rechazar H0 cuando es falsa.
+
+```{r Ej7_ErrorTipo1}
+
+  print("a: correcto")
+  print("b: error tipo 1")
+  print("c: correcto")
+  print("d: error tipo 2")
+  
+  print("Opcion B")
+```
+
+# 2 Pruebas de Independencia y Homogeneidad
+
+## Ejercicio 2 Encuesta
+A un grupo de 350 adultos, quienes participaron en una encuesta, se les preguntó si accedían o no a Internet. Las respuestas clasificadas por sexo fueron las siguientes:
+
+```{r Ej2_2_LeerTwitter}
+
+rm(list = ls())
+
+twitter <- read_excel("twitter.xls")
+colnames(twitter) <- c("id","sexo","usa")
+twitter
+
+```
+
+(a) Represente gráficamente esta información. Interprete el gráfico.
+
+```{r Ej2_A_GraficosTwitter}
+
+twitter.cont <- table(cbind(twitter[,3],twitter[,2]))
+
+colnames(twitter.cont) <- c("M","F")
+rownames(twitter.cont) <- c("no usa","usa")
+
+twitter.cont
+
+mosaicplot(twitter.cont,
+  main="Mosaico Contingencia",
+  col=c("#2E789B","#DF7401")
+  )
+
+
+```
+
+(b) Obtenga los porcentajes por filas y compare las diferentes zonas.
+
+```{r Ej2_B_PorcentajesTwitter}
+
+twitter.cont.marg <- addmargins(twitter.cont)
+
+print("Tabla de proporciones general")
+twitter.prop.gral <- round(prop.table(twitter.cont),2)
+twitter.prop.gral
+
+print("Tabla de proporciones por filas")
+twitter.prop.rows <- round(prop.table(twitter.cont,1),2)
+twitter.prop.rows
+
+print("Tabla de proporciones por columnas")
+twitter.prop.cols <- round(prop.table(twitter.cont,2),2)
+twitter.prop.cols
+
+
+```
+
+(c) Obtenga los porcentajes por zona y compare las diferentes zonas.
+
+```{r Ej2_C}
+print("otros datos?")
+```
+
+(d) Calcule las frecuencias esperadas bajo independencia y compárelas con las observadas, para el grupo generl y por zona.
+
+```{r Ej2_D}
+print("otros datos?")
+```
+
+(e) ¿Sugieren estos datos que existe diferencia de proporciones entre mujeres y hombres que acceden o no a Twiter? Considerar α = 0, 05.
+
+```{r Ej2_E_ChisqTestTwitter}
+
+twitter.chisq <- chisq.test(twitter.cont)
+twitter.chisq
+
+print("no hay evidencia para rechazar la hipotesis nula")
+print("se consideran variables independientes")
+
+```
+
+## Ejercicio 3 Tecnicos en Telecomunicaciones
+Se clasificó en forma cruzada una muestra de 250 técnicos en telecomunicaciones en base a su especialidad y a la zona de la comunidad en que estaban trabajando. Los resultados están tabulados a continuacion:
+
+```{r Ej3_CreatMatrizTecnicos}
+
+rm(list = ls())
+
+tecnicos <- as.data.frame(matrix(c(20,18,12,17,27,
+                                   6,22,15,13,56,
+                                   4,6,14,11,35,
+                                   10,19,23,40,92,
+                                   40,65,64,81,250),nrow = 5, byrow = TRUE))
+colnames(tecnicos) <- c("A","B","C","D","Total")
+rownames(tecnicos) <- c("Norte","Sur","Este","Oeste","Total")
+
+tecnicos
+```
+
+(a) Considera adecuado un test de homogeneidad o de independencia? Fundamente su respuesta considerando el tipo de muestreo realizado.
+
+```{r Ej3_A_TipoTest}
+
+print("es de homogeneidad porque son multiples poblaciones y una variable categorica")
+
+```
+
+(b) Establezca las hipótesis de interés, realice el contraste y concluya considerando un nivel de significación del 1 %
+
+```{r Ej3_B_Hipotesis}
+
+print("Hipotesis nula: las distribucion de especialidades es independiente de las zonas")
+print("Hipotesis alternativa: la especialidad y la zona estan asociadas")
+
+tecnicos.chisq <- chisq.test(tecnicos[-5,-5])
+
+tecnicos.chisq
+
+print("tenemos evidencia para rechazar la H0 con 1% de significacion")
+
+```
+
+## Ejercicio 4 Embarazos
+Entre 1605 recién nacidos registrados en una maternidad, se han presentado 48 con un angioma cuya presencia, se sospecha puede estar relacionada con el cáracter (normal o patológico) del embarazo de la madre. Los resultados son los siguientes:
+Plantear y testear las hipótesis correspondientes considerando un nivel de significación del 5 %.
+
+```{r Ej3_CreatMatrizEmbarazos}
+
+rm(list = ls())
+
+emb <- as.data.frame(matrix(c(37,1334,11,223),nrow = 2, byrow = TRUE))
+colnames(emb) <- c("con angioma","sin angioma")
+rownames(emb) <- c("Embarazo Normal","Embarazo Patologico")
+
+emb
+```
+
+```{r Ej4_Resolucion}
+
+chisq.test(emb)
+fisher.test(emb)
+
+print("H0: la presencia de angioma es independiente de la condicion de embarazo")
+print("H1: la presencia de angioma tiene impacto condicion de embarazo")
+print("Conclusion: con un nivel de significacion de 5% no tenemos pruebas para rechazar la hipotesis nula de que el angioma es independiente de la condicion de embarazo")
+
+```
+
+
+
+# 3 Análisis de correspondencias
+
+## Ejercicio 5 Encuesta Cigarrillos
+
+Se ha realizado una encuesta entre el personal de una empresa. Se le preguntó a cada uno el cargo que desempeña y la cantidad de cigarrillos diarios que fuma. La frecuencia de fumador fue categorizada con las categorías:
+
+No fuma- Fuma Poco – Fumador Medio y Fuma Mucho
+
+Estamos interesados en estudiar la relación, si existiera entre las variables:”puesto de trabajo” y “nivel de fumador” en el contexto de esta empresa.
+
+```{r Ej5_ CrearMatrizFumadores}
+
+rm(list = ls())
+
+cigar <- as.data.frame(matrix(c(4,2,3,2,
+                                4,3,7,4,
+                                25,10,12,4,
+                                18,24,33,13,
+                                10,6,7,2),nrow = 5, byrow = TRUE))
+
+colnames(cigar) <- c("No Fuma","Poco","Moderado","Mucho")
+rownames(cigar) <- c("Gerente Senior","Gerente Junior","Empleado Senior","Empleado Junior","Secretaria")
+
+cigar
+
+```
+
+
+1. La primera pregunta que nos hacemos es si la distribución de la variable fumador es similar en todos los niveles de la variable puesto de desempeño. Construya para eso las distribuciones condicionales de fumador a cada grupo de trabajo.
+
+```{r Ej5_1}
+
+cigar.cont <- as.matrix(cigar)
+
+cigar.cont.marg <- addmargins(cigar.cont)
+
+print("Tabla de contingencia con margenes")
+cigar.cont.marg
+
+print("Tabla de proporciones general")
+cigar.prop.gral <- addmargins(round(prop.table(cigar.cont),2))
+cigar.prop.gral
+
+print("Tabla de proporciones por filas")
+cigar.prop.rows <- round(addmargins(prop.table(cigar.cont,margin = 1),margin = 2),2)
+cigar.prop.rows
+
+print("Tabla de proporciones por columnas")
+cigar.prop.cols <- round(addmargins(prop.table(cigar.cont,margin = 2),margin = 1),2)
+cigar.prop.cols
+
+
+```
+
+2. Realice un análisis de correspondencias para estos datos. ¿Cuántos factores tiene sentido considerar?
+
+```{r Ej5_2}
+
+print("Total muestra")
+cigar.n <- sum(cigar.cont)
+cigar.n
+
+print("Tabla de contingencia con margenes")
+cigar.cont.marg #tabla de contingencia con marginales
+
+print("Frecuencias absolutas columnas")
+cigar.abs.cols <- colSums(cigar.cont)
+cigar.abs.cols
+
+print("Frecuencias absolutas filas")
+cigar.abs.rows <- rowSums(cigar.cont)
+cigar.abs.rows
+
+print("Frecuencias esperadas")
+cigar.esperadas <- (cigar.abs.rows %*% t(cigar.abs.cols))/cigar.n
+cigar.esperadas
+
+print("Estadístico Chi2")
+cigar.estadistico <- sum((cigar.cont-cigar.esperadas)^2/cigar.esperadas)
+cigar.estadistico
+
+print("P-Value")
+cigar.pvalor <-  1 - pchisq(cigar.estadistico, df = (dim(cigar.cont)[1]-1)*(dim(cigar.cont)[2]-1))
+cigar.pvalor
+
+print("Test Chisq")
+cigar.chisq <- chisq.test(cigar.cont)
+cigar.chisq
+
+cigar.ca <- ca(cigar.cont)
+
+names(cigar.ca)
+
+print("Inercia filas")
+cigar.ca$rowinertia
+print("Masa filas")
+cigar.ca$rowmass
+print("Inercia columnas")
+cigar.ca$colinertia
+print("Masa Columnas")
+cigar.ca$colmass
+
+cigar.ca
+
+```
+
+3. Realizar los gráficos perfiles que considere adecuados.
+
+```{r Ej5_3}
+#perfiles fila
+
+cigar.cont.melt <- melt(cigar.cont)
+colnames(cigar.cont.melt)<-c("puesto","nivelFum","valor")
+
+ggplot(data = cigar.cont.melt,
+  mapping = aes(x=puesto,y=valor,group=nivelFum,col=nivelFum)) +
+  geom_line() +
+  labs(title = "Perfiles Fila") +
+  theme_bw()
+
+ggplot(data = cigar.cont.melt,
+  mapping = aes(x=nivelFum,y=valor,group=puesto,col=puesto)) +
+  geom_line() +
+  labs(title = "Perfiles Columna") +
+  theme_bw()
+
+```
+
+4. Explique la calidad de la representación y las relaciones entre las variables y los ejes (inercia, calidad, cosenos).
+
+```{r Ej5_4}
+
+summary(cigar.ca, nb.dec = 2, ncp = 2)
+
+```
+
+5. Hacer una síntesis de sus conclusiones, inspeccione relaciones entre perfiles fila, entre perfiles columna, asociaciones entre filas y columnas de
+manera adecuada.
+
+```{r Ej5_5}
+
+fviz_contrib(cigar.ca, choice = "row", axes = 1) #contribuciones por fila
+fviz_contrib(cigar.ca, choice = "col", axes = 1) #contribuciones por columna
+fviz_ca_biplot(cigar.ca) #mapa perceptual
+
+```
+
+6. ¿Cual es la inercia total?
+
+```{r Ej5_6}
+
+print("Inercia Total: estadistico / tamaño muestral")
+
+cigar.inercia.total.A <- sum(summary(cigar.ca)$scree[,2])
+cigar.inercia.total.B <- cigar.chisq$statistic/sum(cigar.ca$N)
+
+if(round(cigar.inercia.total.A,9)==round(cigar.inercia.total.B,9))
+  {print("Coinciden")} else
+  {print("No Coinciden")}
+
+cigar.inercia.total.A
+cigar.inercia.total.B
+
+```
+
+## Ejercicio 6 Autos
+
+En el archivo de datos Autos.xls (Infostat) están los datos de 339 usuarios de auto Las variables que se han prguntado refieren al origen del auto (americano, japonés o europero), estado civil (soltero, casado-hijo) , relación con la casa(dueño, alquila), tipo de auto(familiar, sport), sexo(Hombre-Mujer), tamaño del auto(chico, mediano y grande) e ingreso familiar(en dos niveles 1 y 2).
+
+```{r Ej6_LeerAutos}
+
+rm(list = ls())
+
+autos <- as.data.frame(unclass(read_excel("autos.xlsx")),stringsAsFactors=TRUE)
+
+colnames(autos) <-tolower(colnames(autos))
+
+summary(autos)
+
+autos
+
+```
+
+
+(a) Elegir tres variables y construir la matriz disyuntiva y la matriz de Burt. Explicar el significado de los valores diagonales y verificar las propiedades de la matriz.
+
+```{r}
+
+autos.pick <- autos[,c(2,4,6)]
+
+autos.vars <- colnames(autos.pick)
+
+autos.mods <- c()
+autos.vars.q <- c()
+autos.vars.mods <- c()
+
+for (i in 1:length(autos.vars)){
+  autos.vars.q <- c(autos.vars.q, length(levels(autos.pick[,i])))
+  autos.mods <- c(autos.mods, levels(autos.pick[,i]))
+  autos.vars.mods <- c(autos.vars.mods, paste0(autos.vars[i],".",levels(autos.pick[,i])))
+}
+
+print("Variables Elegidas")
+autos.vars
+print("Modalidades de las Variables Elegidas")
+autos.mods
+print("Columnas para matriz disyuntiva")
+autos.vars.mods
+print("Modalidades por variable")
+autos.vars.q
+
+autos.vars.qn <- c()
+for (i in 1:length(autos.vars)){
+  autos.vars.qn <- c(autos.vars.qn,rep(i,autos.vars.q[i]))
+}
+
+autos.disy <- autos[1]
+
+for (i in 1:length(autos.vars.mods)) {
+  autos.disy <- cbind(autos.disy, nuevaCol = autos.pick[,autos.vars.qn[i]]==autos.mods[i])
+  colnames(autos.disy)[colnames(autos.disy)=="nuevaCol"] <- autos.vars.mods[i]
+}
+
+autos.vars.mods.short <- c()
+for (i in 1:length(autos.vars)){
+  autos.vars.mods.short <- c(autos.vars.mods.short,
+                             paste0(substr(autos.vars[i],1,3),".",
+                                    substr(levels(autos.pick[,i]),1,3)))
+}
+
+autos.disy <- as.matrix(autos.disy[-1])
+#colnames(autos.disy) <- autos.vars.mods.short
+
+print("Matriz Disyuntiva")
+head(autos.disy)
+
+autos.burt <- t(autos.disy)%*%as.matrix(autos.disy)
+print("Matriz de Burt")
+autos.burt
+
+
+#tabla_disyuntiva <- tabla_disyuntiva[,-c(0:11)]
+
+
+```
+```{r}
+autos.burt2 <- getBurt(autos.pick)
+
+#autos.burt == autos.burt2
+
+autos.disy2 <- acm.disjonctif(autos.pick)
+
+#autos.disy == autos.disy2
+
+```
+
+
+(b) Realizar un análisis de correspondencias multiples con estas variables y
+explicar los resultados.
+
+```{r}
+
+autos.mca <- MCA(autos.pick, quali.sup = 1, graph=F)
+
+autos.mca$eig[,2]
+
+#Grafica las contribuciones de las variables
+fviz_contrib(autos.mca,choice = "var",axes = 1,
+             fill = "royalblue", color = "black") +
+  theme_gray() + ggtitle("") + xlab("") + ylab("Contribuciones(%)")
+
+#Grafica las contribuciones de los individuos
+fviz_contrib(autos.mca,choice = "ind", axes = 1,
+             top=5,fill="royalblue",color="black") +
+  theme_gray() + ggtitle("") + xlab("") + ylab("Contribuciones(%)")
+
+#Realiza el biplot simétrico
+fviz_mca_var(autos.mca,repel=TRUE,col.var="royalblue") +
+  theme_gray() + ggtitle("") +
+  xlab(paste0("Dimensión1 ",round(autos.mca$eig[1,2],2),"%")) +
+  ylab(paste0("Dimensión2 ",round(autos.mca$eig[2,2],2),"%"))
+
+#Realiza un agrupamiento por forma
+fviz_mca_ind(autos.mca,habillage="nacionalidad",
+             addEllipses=TRUE,repel=TRUE,legend.title="nacionalidad") +
+  theme_gray() + ggtitle("") +
+  xlab("Dimensión1")+ylab("Dimensión2") + scale_color_brewer(palette="Paired")
+
+
+
+```
+
+## Ejercicio 7 Opinion
+
+La opinión de los ingleses de los europeos se encuentra en el archivo opinión ingleses.xls. Conducir un análisis de correspondencias para caracterizar a los europeos desde la mirada de los ingleses.
+
+1. Qué características son las más usuales?
+
+```{r}
+
+rm(list = ls())
+
+ingleses <- read_excel("ingleses.xlsx")
+colnames(ingleses) <-tolower(colnames(ingleses))
+
+ingleses
+
+```
+
+2. Qué características son las más raras?
+
+```{r}
+
+ing.melt <- melt(ingleses)
+colnames(ing.melt) <- c("p","c","q")
+ing.melt <- ing.melt[,c(3,1,2)]
+ing.burt <- getBurt(ing.melt,input = "nbypcounts")
+
+ing.plain <- data.frame(pais = rep(ing.melt$p, ing.melt$q),
+                        car = rep(ing.melt$c, ing.melt$q))
+
+
+ing.mca <- MCA(ing.plain, graph = FALSE)
+
+ing.cont <- as.matrix(ingleses[,-1])
+rownames(ing.cont) <-ingleses$país
+
+ing.cont
+
+ing.ca <- CA(ing.cont, graph = FALSE)
+
+
+
+```
+
+3. En función de estos datos, le parece justo decir que Paris es la ciudad del glamour?
+
+```{r}
+fviz_contrib(ing.ca, choice = "row", axes = 1) #contribuciones por fila
+fviz_contrib(ing.ca, choice = "col", axes = 1) #contribuciones por columna
+fviz_ca_biplot(ing.ca) #mapa perceptual
+
+```
+
+
+```{r}
+#Grafica las contribuciones de las variables
+fviz_contrib(ing.mca,choice = "var",axes = 1,
+             fill = "royalblue", color = "black") +
+  theme_gray() + ggtitle("") + xlab("") + ylab("Contribuciones(%)")
+
+#Grafica las contribuciones de los individuos
+fviz_contrib(ing.mca,choice = "ind", axes = 1,
+             top=5,fill="royalblue",color="black") +
+  theme_gray() + ggtitle("") + xlab("") + ylab("Contribuciones(%)")
+
+#Realiza el biplot simétrico
+fviz_mca_var(ing.mca,repel=TRUE,col.var="royalblue") +
+  theme_gray() + ggtitle("") +
+  xlab(paste0("Dimensión1 ",round(autos.mca$eig[1,2],2),"%")) +
+  ylab(paste0("Dimensión2 ",round(autos.mca$eig[2,2],2),"%"))
+
+```
+
+## Ejercicio 8 Proteinas
+
+En el archivo proteinas.xls se tabuló el consumo de distintos tipos de proteínas per cápita de los habitantes de distintos países de Europa. Conduzca un análisis de correspondencias multiples para describir el tipo de consumo de proteínas de los países. Vincule este análisis con la posición geográfica de los mismos.
+
+```{r}
+rm(list = ls())
+
+proteinas <- read_excel("proteinas.xlsx")
+colnames(proteinas) <-tolower(colnames(proteinas))
+colnames(proteinas)[1] <- "pais"
+proteinas
+
+```
+
+
+```{r}
+prot.norm <- scale(proteinas[,-1])
+
+prot.norm.summ <- apply(prot.norm,2,quantile)
+
+prot.norm.summ
+
+```
+
+
+```{r}
+
+prot.class <- as.data.frame(prot.norm)
+
+for (i in 1:ncol(prot.norm)){
+  prot.class[i] <- cut(prot.norm[,i],
+      breaks = c(prot.norm.summ[1,i],
+                 prot.norm.summ[2,i],
+                 prot.norm.summ[3,i],
+                 prot.norm.summ[4,i],
+                 prot.norm.summ[5,i]),
+      labels = c("MuyBajo","MedBajo","MedAlto","Alto"),
+      include.lowest = TRUE)
+}
+
+prot.class <- cbind(proteinas[1],prot.class)
+
+prot.class.melt <- melt(prot.class,id.vars = c("pais"), variable.name = "proteina")
+colnames(prot.class.melt)[3] <- "nivel"
+
+prot.class
+prot.class.melt
+
+
+```
+
+```{r}
+
+rownames(prot.class) <- prot.class$pais
+
+prot.mca <- MCA(prot.class[,-1], graph = FALSE)
+
+#Grafica las contribuciones de las variables
+fviz_contrib(prot.mca, choice="var", axes=1,
+             fill="royalblue", color="black") +
+  theme_gray() + ggtitle("") +
+  xlab("") + ylab("Contribuciones(%)")
+
+#Grafica las contribuciones de los individuos
+fviz_contrib(prot.mca,choice="ind",axes=1,top=5,
+             fill="royalblue",color="black")+
+  theme_gray()+ggtitle("")+
+  xlab("")+ylab("Contribuciones(%)")
+
+#Realiza el biplot simétrico
+fviz_mca_var(prot.mca,repel=TRUE,col.var="royalblue")+
+  theme_gray()+ggtitle("")+
+  xlab(paste0("Dimensión1 ",round(prot.mca$eig[1,2],2),"%")) +
+  ylab(paste0("Dimensión2 ",round(prot.mca$eig[2,2],2),"%"))
+
+#Realiza un agrupamiento por género
+fviz_mca_ind(prot.mca,habillage="vaca",addEllipses=TRUE,
+             repel=TRUE,legend.title="vaca")+
+  theme_gray()+ggtitle("")+
+  xlab(paste0("Dimensión1 ",round(prot.mca$eig[1,2],2),"%")) +
+  ylab(paste0("Dimensión2 ",round(prot.mca$eig[2,2],2),"%"))
+  scale_color_brewer(palette="Paired")
+
+```
+
+
+

@@ -1,0 +1,245 @@
+---
+title: "Trabajo Práctico III AID-2022"
+author: "Debora"
+date: "2022-10-25"
+output:
+  rmdformats::readthedown:
+    toc: 6
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, warning=FALSE, cache=FALSE, message=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE, include=FALSE}
+library(readxl) # lectura de archivos excel
+library(ggplot2)#graficos
+library(dplyr) #manejo de datos
+library(tidyr) #manejo de datos
+library(kableExtra) # tablas bonitas
+library(tidyverse)# manejo de datos
+library(reshape2)# para manejo de tablas
+library(corrplot) # correlogramas
+library(ca) # analisis de correspondencias
+library(FactoMineR) # analisis de correspondencias
+library(factoextra)# analisis de correspondencias
+```
+
+Ejercicio 2. A un grupo de 350 adultos, quienes participaron en una encuesta,
+se les preguntó si accedían o no a Twiter. Las respuestas clasificadas por sexo
+fueron las siguientes:
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+# Construimos la tabla
+twit=rbind(c(14,25),c(159,152))
+rownames(twit)<-c("Usa","No Usa")
+colnames(twit)<-c("F","M")
+
+#Visualizamos la tabla
+twit%>%kable()%>%
+  kable_paper("hover", 
+              full_width = F)
+ 
+
+```
+
+
+(a) Represente gráficamente esta información. Interprete el gráfico.
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+twiter <- read_excel("C:/Users/Debora/Dropbox/Multiv_DM/Datos/twitter.xlsx")
+mosaicplot(twit,main="",xlab="Twiter",ylab="Sexo",col=c("#2E789B","#DF7401"))
+sexo=as.factor(twiter$Sexo)
+ggplot(twiter,aes(Twiter,fill=sexo))+geom_bar()
+
+```
+
+(b) Obtenga los porcentajes por filas y compare las diferentes zonas.
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+kable(round(prop.table(twit), 2))#proporciones totales reducidas a 2 decimales
+```
+
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+kable(round(prop.table(twit, 1), 2) )#proporciones por fila reducida a 2 decimales
+```
+
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+kable(round(prop.table(twit, 2), 2)) #proporciones por columna reducida a 2 decimales
+```
+
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+kable(addmargins(twit, c(1, 2))) #agrega los totales
+```
+
+(c) Obtenga los porcentajes por zona y compare las diferentes especialidades.
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE} 
+
+tw_caba=dplyr::filter(twiter,Zona=='CABA')
+tw_pba=dplyr::filter(twiter,Zona=='PBA')
+tab_caba=tw_caba%>%dplyr::select(Twiter,Sexo)%>%table()
+tab_pba=tw_pba%>%dplyr::select(Twiter,Sexo)%>%table()
+kable(tab_caba)
+kable(tab_pba)
+kable(round(prop.table(tab_caba), 2))
+kable(round(prop.table(tab_pba), 2))
+```
+
+(d) Calcule las frecuencias esperadas bajo independencia y compárelas con
+las observadas.
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+sal_chi=chisq.test(twit)
+sal_chi$expected%>%round(2)
+twit
+
+```
+(e) ¿Sugieren estos datos que existe diferencia de proporciones entre mujeres
+y hombres que acceden o no a Twiter? Considerar $\alpha$ = 0, 05.
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+sal_chi=chisq.test(twit)
+sal_chi
+```
+# Ejercicio 3
+
+**Se clasificó en forma cruzada una muestra de 250 técnicos en telecomunicaciones
+en base a su especialidad y a la zona de la comunidad en que
+estaban trabajando. Los resultados están tabulados a continuacion:**
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+mat=rbind(c(20,18,12,17),
+      c(6,22,15,13),
+      c(4,6,14,11),
+      c(10,19,23,40))
+colnames(mat)<-c("A","B","C","D")
+rownames(mat)<-c("Norte", "Sur","Este","Oeste")
+kable(addmargins(mat, c(1, 2)))
+```
+   
+  
+   
+a. Considera adecuado un test de homogeneidad o de independencia? Fundamente
+su respuesta considerando el tipo de muestreo realizado.
+
+<b style = 'color : red;'> Miren el muestreo!! </b>
+
+b. Establezca las hipótesis de interés, realice el contraste y concluya considerando
+un nivel de significación del 1 %.
+
+ $H_O:$ la especialidad es independiente de la zona
+ 
+ $H_1:$ la especialidad y la zona están asociadas
+  
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+prueba=chisq.test(mat)
+pvalor=prueba$p.value
+pvalor
+residuos=prueba$residuals
+residuos
+observados=prueba$observed
+observados
+esperados=prueba$expected
+esperados
+```
+## <span style="color: darkgreen;">¿Se cumplen los supuestos de la prueba?</span>
+
+# Ejercicio 5. 
+
+**Se ha realizado una encuesta entre el personal de una empresa. Se
+le preguntó a cada uno el cargo que desempeña y la cantidad de cigarrillos diarios
+que fuma. La frecuencia de fumador fue categorizada con las categorías:
+No fuma- Fuma Poco – Fumador Medio y Fuma Mucho
+En la Tabla4 se resumen las respuestas.**
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+
+dat_fum=rbind(Ger_Senior= c(4, 2, 3, 2) ,
+Ger_Junior=c( 4, 3 ,7 ,4 ),
+Empl_Senior=c( 25, 10, 12, 4) ,
+Empl_Junior=c( 18 ,24 ,33, 13) ,
+Secretarias= c(10 ,6, 7, 2 ))
+colnames(dat_fum)<-c("No fuma", "Poco", "Medio", "Mucho")
+dat_fum%>%kable()%>%
+  kable_paper("hover", 
+              full_width = F)
+```
+Estamos interesados en estudiar la relación, si existiera entre las variables:”puesto de trabajo” y “nivel de fumador” en el contexto de esta empresa.
+
+1. La primer pregunta que nos hacemos es si la distribución de la variable
+fumador es similar en todos los niveles de la variable puesto de desempeño.
+Construya para eso las distribuciones condicionales de fumador a
+cada grupo de trabajo.
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+kable(round(prop.table(dat_fum, 1), 2) ) # perfiles fila reducida a 2 decimales
+
+
+```
+
+2. Realice un análisis de correspondencias para estos datos. ¿Cuántos factores
+tiene sentido considerar?
+
+# Análisis de Correspondencias
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+fum.ca <- CA(dat_fum, graph = FALSE)
+summary(fum.ca, nb.dec = 2, ncp = 2)
+fviz_ca_biplot(fum.ca) #mapa perceptual
+
+```
+
+3. Realizar los gráficos perfiles que considere adecuados.
+
+# Perfiles Fila
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+prop.table(dat_fum, 1)
+datosf = melt(prop.table(dat_fum))
+colnames(datosf)<-c("Puesto","Nivel_Fum","prop_fila")
+ggplot(datosf,aes(x=Puesto,y=prop_fila,group=Nivel_Fum,col=Nivel_Fum))+geom_line()
+```
+# Perfiles Columna
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+prop.table(dat_fum, 2)
+datosc = melt(prop.table(dat_fum,2))
+colnames(datosc)<-c("Puesto","Nivel_Fum","prop_col")
+ggplot(datosc,aes(x=Nivel_Fum,y=prop_col,group=Puesto,col=Puesto))+geom_line()
+```
+
+4. Explique la calidad de la representación y las relaciones entre las variables
+y los ejes (inercia, calidad, cosenos).
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+summary(fum.ca, nb.dec = 2, ncp = 2)
+
+```
+5. Hacer una síntesis de sus conclusiones, inspeccione relaciones entre perfiles
+fila, entre perfiles columna, asociaciones entre filas y columnas de
+manera adecuada.
+
+#Resultados del análisis por Variable
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+fviz_contrib(fum.ca, choice = "row", axes = 1)#contribuciones por fila
+fviz_contrib(fum.ca, choice = "col", axes = 1)#contribuciones por columna
+
+```
+
+6. ¿Cual es la inercia total?
+
+```{r,warning=FALSE, cache=FALSE, message=FALSE}
+inercia=chisq.test(dat_fum)$statistic/193
+inercia
+```
+
+

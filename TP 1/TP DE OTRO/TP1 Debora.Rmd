@@ -1,0 +1,520 @@
+---
+title: "Trabajo Práctico I AID-2022"
+author: "Debora"
+date: "2022-10-25"
+output:
+  rmdformats::readthedown:
+    toc: 6
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, warning=FALSE, cache=FALSE, message=FALSE,include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Ejercicio 1
+
+Seis candidatas son evaluadas para el puesto de recepcionista en una
+empresa, para ello pasan por dos entrevistas. En la primera las evalúa
+el responsable de recursos humanos de la empresa (juez 1) y en la
+segunda el responsable del área de la cual van a depender (juez 2). La
+asignación de puntajes es en cordialidad, presencia y manejo de idiomas.
+Los puntajes asignados independientemente por estos jueces se encuentran
+en el archivo recepcionistas.xls.
+
+```{r,warnings=FALSE,cache=FALSE,message=FALSE}
+#Cargamos las librerías
+library(readxl)#lectura
+library(dplyr) #manipulacion de datos
+library(kableExtra) #tablas
+library(ggplot2) #graficos
+library(tidyverse) #manipulacion de datos
+library(ggpubr) #para juntar
+library(ggforce) # grafico de violin y jitter
+library(GGally) # ggpairs
+library(corrplot) # para correlogramas
+```
+
+-   
+
+    (a) Calcule en promedio por juez de cada una de las aspirantes.
+        ¿Cuál le parece que seleccionaría cada uno de ellos? ¿Existe
+        coincidencia?
+
+```{r}
+#leemos los datos
+recepcionistas <- read_excel("C:/Users/Debora/Dropbox/AustralPosgrado/DataScience/Datos/recepcionistas.xls")
+recepcionistas
+
+```
+
+```{r}
+#separamos  las puntuaciones por juez
+juez1=recepcionistas[,2:4]
+juez2=recepcionistas[,5:7]
+```
+
+```{r}
+#calculamos los promedios por candidato para cada juez
+prom_j1=apply(juez1,1,mean)
+prom_j2=apply(juez2,1,mean)
+#buscamos el máximo promedio por juez y vemos a quien corresponde
+cand=recepcionistas%>%dplyr::select(candidatos)%>%unlist()
+max_j1=cand[which.max(prom_j1)]
+max_j1
+max_j2=cand[which.max(prom_j2)]
+max_j2
+#coinciden los máximos?
+```
+
+-   
+
+    (b) Calcule el promedio de cada una de las aspirantes tomando en
+        cuenta todos los rubros y ambos jueces.
+
+```{r}
+puntuaciones=select(recepcionistas,cord.juez1:idiom.juez2)
+promxcand=data.frame("Cand"=cand,"Prom"=round(apply(puntuaciones,1,mean),2))
+rownames(promxcand)<-NULL
+promxcand
+```
+
+-   
+
+    (c) Transformar las puntuaciones observadas de modo tal que cada una
+        de las seis variables tenga media 0 y dispersión 1. ¿Cuál sería
+        el objetivo de esta transformación?
+
+```{r}
+#estandarizamos por columna
+punt_stand=data.frame(puntuaciones%>%scale())
+punt_stand
+#queremos hacer comparables las diferentes puntuaciones
+```
+
+-   
+
+    (d) Transformar las puntuaciones de modo tal que cada candidata
+        tenga para cada juez media 0 y dispersión 1. ¿Cuál sería el
+        objetivo de esta transformación?
+
+```{r}
+sal2=data.frame(cand,t(t(juez1)%>%scale()%>%round(2)))
+rownames(sal2)<-NULL
+sal2 %>%
+  kbl(caption = "Puntuaciones Estandarizadas Juez 1") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+
+sal3=data.frame(cand,t(t(juez2)%>%scale()%>%round(2)))
+rownames(sal3)<-NULL
+sal3 %>%
+  kbl(caption = "Puntuaciones Estandarizadas Juez 2") %>%
+  kable_classic(full_width = F, html_font = "Cambria")
+```
+
+-   
+
+    (e) Grafique los perfiles multivariados de cada una de las
+        candidatas para ambas transformaciones. ¿Qué observa?
+
+```{r}
+#damos nueva forma a los datos del juez 1
+dj1= gather(sal2, key="rubro", value="valor", cord.juez1:idiom.juez1)
+dj1
+RUBRO=as.factor(dj1$rubro)
+Candi=as.factor(dj1$cand)
+plot1=ggplot(dj1,aes(x=RUBRO,y=valor))+geom_line(aes(x=RUBRO,y=valor,group =Candi,color=Candi))+ labs(title = "juez 1") +
+    theme(axis.text.x  = element_text(angle=90))
+#damos nueva forma a los datos del juez 2
+dj2= gather(sal3, key="rubro", value="valor", cord.juez2:idiom.juez2)
+dj2
+Rubro=as.factor(dj2$rubro)
+Candi=as.factor(dj2$cand)
+plot2=ggplot(dj2,aes(x=Rubro,y=valor))+geom_line(aes(x=Rubro,y=valor,group =Candi,color=Candi))+ labs(title = "juez 2")+theme(axis.text.x  = element_text(angle=90))
+ggarrange(plot1,plot2)
+```
+
+# Ejercicio 2
+
+(a) Clasificar las variables de la base. Para las variables numéricas
+    construir un gráfico de coordenadas paralelas
+
+**Nacionalidad** Categórica
+
+**Edad**: continua discretizada
+
+**Sexo**: categórica
+
+**Estatura**: cuantitativa continua
+
+**Sitio**: categórica
+
+**Uso**: cuantitativa continua
+
+**Temperatura**: cuantitativa continua
+
+**Autos**: cuantitativa discreta
+
+**Cigarrillos**: cuantitativa discreta
+
+```{r}
+internet <- read_excel("C:/Users/Debora/Dropbox/AustralPosgrado/DataScience/Datos/Internet2017.xls")
+
+grafica <- ggparcoord(internet, columns=c(3,5,7:10), groupColumn="Nacionalidad")
+grafica+theme_bw()
+
+grafica1 <- ggparcoord(internet, columns=c(3,5,7:10), groupColumn="Uso")
+
+grafica1+theme_bw()
+```
+
+## Esta gráfica no es adecuada para visualizar tantos individuos y conviene cuando los datos están agrupados.
+
+(b) Construir la tabla de frecuencias de la variable sexo. ¿Hay algún
+    valor que llame la atención? ¿Qué tipo de error considera que es?
+
+```{r}
+internet%>%dplyr::select(Sexo)%>%table()
+```
+
+[aparece un valor 0, aparenta ser un error de tipeo]{style="color:blue"}
+
+(c) Ordenar los datos por la variable Edad. ¿Encontró algún valor
+    extraño? ¿Qué tipo de error puede ser?
+
+```{r}
+internet%>%dplyr::select(Edad)%>%arrange(-Edad) 
+internet%>%dplyr::select(Edad)%>%summary()
+```
+
+[Aparecen valores negativos y una edad de 280 años.]{style="color:red"}
+
+Construir la tabla de frecuencias de la variable Sitio. ¿Encuentra algún
+valor que le llame la atención? ¿Qué tipo de error puede ser?
+
+```{r}
+internet%>%dplyr::select(Sitio)%>%table()
+```
+
+**Los sitios 8 y 28 no existen, debe ser un error de carga o tipeo.**
+
+(d) Proceda de forma similar para las variables Temperatura, Autos y
+    Cigarrillos.
+
+```{r}
+internet%>%dplyr::select(Cigarrillos)%>%arrange(-Cigarrillos)
+internet%>%dplyr::select(Cigarrillos)%>%summary()
+```
+
+**Llama la atención el 100**.
+
+```{r}
+internet%>%dplyr::select(Autos)%>%arrange(-Autos)
+
+```
+
+**EL 2680 aparenta ser un error de tipeo**.
+
+```{r}
+internet%>%dplyr::select(Temperatura)%>%arrange(-Temperatura)
+
+```
+
+**El 131 y el 94 parecen ser errores de carga**.
+
+(e) Elimine de la base los valores que no son posibles y que seguramente
+    corresponde a un error de tipeo. Detalle valores/registros que le
+    hayan llamado la atención pero no deban ser eliminados
+    necesariamente.
+
+```{r}
+intTem<-internet%>%dplyr::select(Temperatura)%>%mutate(temperatura=ifelse(Temperatura>40,NA,Temperatura))
+
+intAut<-internet%>%dplyr::select(Autos)%>%mutate(autos=ifelse(Autos>200|Autos<0,NA,Autos)) 
+
+intEd<-internet %>%dplyr::select(Edad)%>%mutate(edad=ifelse(Edad>100|Edad<5,NA,Edad))
+
+intUso<-internet%>%dplyr::select(Uso)%>%mutate(uso=ifelse(Uso<0,NA,Uso))
+
+intSit<-internet%>%dplyr::select(Sitio)%>%mutate(sitio=ifelse(Sitio>7,NA,Sitio))
+
+```
+
+(f) ¿Para cuáles de las variables tiene sentido calcular la media? ¿Y la
+    mediana?
+
+[Media para las cuantitativas solamente y mediana para las ordinales o
+cuantitativas.]{style="color:blue"}
+
+```{r}
+intEd%>%summarise(Media=mean(edad,na.rm=TRUE),Mediana=median(edad,na.rm=TRUE))
+```
+
+**son valores similares, no impresiona asimetría**.
+
+```{r}
+intAut%>%summarise(Media=mean(autos,na.rm=TRUE),Mediana=median(autos,na.rm=TRUE))
+```
+
+**no hay asimetría aparentemente.**
+
+```{r}
+intUso%>%summarise(Media=mean(uso,na.rm=TRUE),Mediana=median(uso,na.rm=TRUE))
+```
+
+**Acá se observa asimetría por la derecha, la media es muy superior a la
+mediana**.
+
+```{r}
+intTem%>%summarise(Media=mean(temperatura,na.rm=TRUE),Mediana=median(temperatura,na.rm=TRUE))
+
+```
+
+**no se aprecia asimetría en esta variable** .
+
+(g) ¿Cuáles de las variables le parecen simétricas a partir de estos
+    resúmenes? Confirme estas observaciones mediante un boxplot.
+
+```{r,warning=FALSE,cache=FALSE,message=FALSE}
+intTem%>%ggplot()+geom_boxplot(aes(y=temperatura),fill="aquamarine3")+theme_bw()
+```
+
+**se aprecia la presencia de un outlier alto**.
+
+```{r,warning=FALSE,cache=FALSE,message=FALSE}
+intUso%>%ggplot()+geom_boxplot(aes(y=uso),fill="coral3")+theme_bw()
+```
+
+**En este caso hay muchos valores atípicos altos**.
+
+(h) Calcular la desviación intercuartil y detectar presencia de valores salvajes moderados y severos.
+
+```{r,warning=FALSE,cache=FALSE,message=FALSE}
+
+Q1_uso<-summary(intUso$uso)[2]
+Q3_uso<-summary(intUso$uso)[5]
+DI_uso=Q3_uso-Q1_uso
+VAI_uso<-Q1_uso-1.5*DI_uso
+VAS_uso<-Q3_uso+1.5*DI_uso
+VLS_uso<-Q3_uso+3*DI_uso
+VLI_uso<-Q1_uso-3*DI_uso
+rbind(DI_uso,VAS_uso,VAI_uso,VLI_uso,VLS_uso)
+
+
+which(intUso$uso>VAS_uso)
+which(intUso$uso<VAI_uso)
+
+which(intUso$uso>VAS_uso&intUso$uso>VLS_uso)
+which(intUso$uso<VAI_uso&intUso$uso<VLI_uso)
+```
+
+# Ejercicio 3
+
+## Gráficos univariados y multivariados
+
+### (Datos: Gorriones.xls)
+
+Base de datos: Se han registrado para 49 gorriones las siguientes
+variables zoo-métricas: - a) Largo total - b) Extensión alar - c) Largo
+del pico y cabeza - d) Largo del húmero - e) Largo de la quilla del
+esternón - f) Sobrevida (1) Si, (-1) No
+
+-   a Indicar en cada caso de que tipo de variable se trata.
+
+```{r}
+# leemos la base de datos
+gorriones <- read_excel("C:/Users/Debora/Dropbox/CristinaBrio/gorriones.xlsx")
+gorriones
+```
+
+Largototal, extension, cabeza, humero, esternon son variables continuas
+(mediciones) por su parte sobrevida es categórica (la vamos a considerar
+un factor).
+
+-   b Confeccionar un informe para cada variable( univariado).
+
+```{r}
+gorriones%>%str() # nos muestra que hay en cada variable
+gorriones%>%glimpse() # nos muestra como esta almacenada cada variable
+gorriones %>%select(largototal:esternon) %>% summary() # nos hace un resumen para cada variable
+sobrev=as.factor(gorriones$sobrevida)
+```
+
+-   c Realizar en el caso que corresponda un histograma. Ensayar el
+    número de intervalos que conviene en cada variable, indicar si
+    utiliza algún criterio.
+
+```{r}
+ggplot(gorriones) + 
+  geom_histogram(bins = 10, aes(x = largototal, fill = factor(sobrevida)), color = 'black') + facet_grid(sobrevida~., scales = 'free') +
+  xlab("largo total") + 
+  ylab("Frecuencia") + 
+  ggtitle("Distribución de la variable Largo Total para los distintos Sobrevida") +
+  theme_minimal()
+```
+
+```{r}
+ggplot(gorriones) + 
+  geom_density( aes(x = cabeza, fill = factor(sobrevida)), color = 'black') + facet_grid(sobrevida~., scales = 'free') +
+  xlab("cabeza") + xlim(c(30,35))+ 
+  ylab("Frecuencia") + 
+  ggtitle("Distribución de la variable Cabeza para los distintos Sobrevida") +
+  theme_minimal()
+```
+
+(d) Realizar un boxplot comparativo para cada una de estas variables
+    particionando por el grupo definido por la supervivencia. ¿Le parece
+    que alguna de estas variables está relacionada con la supervivencia,
+    es decir que toma valores muy distintos en ambos grupos? Analizar en
+    todos los casos la presencia de outliers.
+
+```{r}
+ggplot(gorriones,aes(x=sobrev,y=largototal,fill=sobrev))+geom_boxplot(notch=TRUE)+
+  scale_fill_manual(values=c("#FE2E2E","#819FF7")) +# cambiamos los colores
+  xlab("Sobrevida")+ylab("Largo Total")
+```
+
+```{r}
+gorriones %>% ggplot(aes(x = sobrev, 
+             y = cabeza)) +
+  geom_violin(trim = FALSE, aes(color = sobrev)) +
+  stat_summary(fun.data = "mean_sdl",  
+               fun.args = list(mult = 1), 
+               geom = "pointrange", 
+               color = "black") +
+  scale_color_manual(values = c("#00AFBB", "#E7B800"))
+```
+
+```{r}
+
+gorriones %>% 
+   ggplot(aes(x = sobrev, 
+             y = humero)) +
+  geom_violin(aes(fill = sobrev), trim = FALSE) + 
+  geom_boxplot(width = 0.15)+
+  scale_fill_manual(values = c( "#FC4E07","brown")) +
+  theme(legend.position = "none")
+```
+
+```{r}
+gorriones %>% 
+    ggplot(aes(x = sobrev, 
+             y = esternon)) +
+  geom_sina(aes(color = sobrev), size = 2)+
+  scale_color_manual(values = c( "purple", "#FC4E07")) +
+  theme(legend.position = "none")
+```
+
+```{r}
+g2 <- gorriones %>%
+  ggplot(aes(x=sobrev, y=extension, fill=sobrev)) + 
+    geom_violin() +
+    theme(
+      legend.position="none",
+      plot.title = element_text(size=10, # tamaño
+                                hjust = 0.5, # centrado
+                                face="bold", # estilo
+                                color = "black")
+  ) +ylim(c(220,260))+
+  labs( x="sobrevida", y="Extensión", 
+        title="Distribución de Extensión  por Supervivencia")+geom_boxplot(width = 0.3,fill="white")
+g2
+```
+
+(e) Construir gráficos bivariados para las todas las variables,
+    particionando por el grupo de supervivencia (un color para cada
+    grupo). ¿Observa alguna regularidad que pueda explicar la
+    supervivencia?
+
+```{r}
+gorr=gorriones%>%select(largototal:esternon)
+sobrev=factor(gorriones$sobrevida)
+ggpairs(gorr, aes(color=sobrev),
+        upper = list(continuous = "density", combo = "box_no_facet"),
+        lower = list(continuous = "points" , combo ="dot_no_facet"))+
+  theme_bw()
+```
+
+(f) Construir la matriz de diagramas de dispersión. ¿Considera que algún
+    par de estas medidas están relacionadas? Estudiar si la asociación
+    de algunas de estas medidas es diferente en alguno de los grupos
+
+```{r}
+M= cor(gorr)
+corrplot.mixed(M, upper = "pie",     
+         lower = "ellipse")
+```
+
+# Ejercicio 5
+
+## Matriz de covarianzas: (Datos Gorriones.xls)
+
+### Para esta base de datos, interesa:
+
+   
+
+    (a) Dimensión de la base de datos (n= número de observaciones, p=
+        cantidad de variables observadas sobre cada individuo).
+
+```{r}
+gorriones
+dim(gorriones) # la dimensión dice 7 columnas pero son 6 variables y 49 registros
+#la primer columna corresponde a el orden del registro
+```
+
+-   
+
+    (b) Hallar el vector de medias, la matriz de varianzas y covarianzas
+        y la matriz de correlaciones. ¿Qué características tienen estas
+        matrices?
+
+```{r}
+gorr=gorriones%>%dplyr::select(largototal:esternon)
+vector_medias=apply(gorr,2,mean)
+vector_medias
+```
+
+```{r}
+matriz_covarianzas=var(gorr)
+round(matriz_covarianzas,3)
+```
+
+```{r}
+matriz_correlacion=cor(gorr)
+round(matriz_correlacion,3)
+```
+
+-   
+
+    (c) Explicar que representa el elemento m11 de la matriz de
+        varianzas y covarianzas, ídem para el elemento m31.
+
+**m11=var(largototal)**
+
+**m31=covarianza(largototal, cabeza)**
+
+-   
+
+    (d) Explicar que representa el elemento m22 de la matriz de
+        correlaciones, ídem para el elemento m13.
+
+**m22=cor(extension,extension)=1** 
+
+(todos los elementos diagonales son 1)
+
+**m13=m31=cor(largotal,cabeza)**
+
+-   
+
+    (e) Relacionar los elementos m21,m11ym22 de la matriz de varianzas y
+        covarianzas con el elemento m12 de la matriz de correlaciones.
+        
+        
+        corr(variable1,variable2)=cov(variable1,variable2)/raiz(var(variable1))*raiz(var(variable2))
